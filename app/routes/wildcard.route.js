@@ -15,6 +15,7 @@ function route_wildcard (config, raneto) {
     // Skip if nothing matched the wildcard Regex
     if (!req.params[0]) { return next(); }
 
+    var trailingSlash = '/';
     var suffix = 'edit';
     var slug   = req.params[0];
     if (slug === '/') { slug = '/index'; }
@@ -22,6 +23,10 @@ function route_wildcard (config, raneto) {
     var file_path      = path.normalize(raneto.config.content_dir + slug);
     var file_path_orig = file_path;
 
+    // Remove trailing slash
+    if (file_path.indexOf(trailingSlash, file_path.length - trailingSlash.length) !== -1) {
+      file_path = file_path.slice(0, - trailingSlash.length);
+    }
     // Remove "/edit" suffix
     if (file_path.indexOf(suffix, file_path.length - suffix.length) !== -1) {
       file_path = file_path.slice(0, - suffix.length - 1);
