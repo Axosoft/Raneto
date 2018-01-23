@@ -3,8 +3,10 @@
 
 // Modules
 var fs                             = require('fs');
-var moment                         = require('moment');
+var _                              = require('underscore');
+var build_nested_pages             = require('../functions/build_nested_pages.js');
 var get_filepath                   = require('../functions/get_filepath.js');
+var get_last_modified              = require('../functions/get_last_modified.js');
 var remove_image_content_directory = require('../functions/remove_image_content_directory.js');
 
 function route_home (config, raneto) {
@@ -25,7 +27,7 @@ function route_home (config, raneto) {
     // Otherwise, we're generating the home page listing
     var suffix = 'edit';
     if (filepath.indexOf(suffix, filepath.length - suffix.length) !== -1) {
-      filepath = filepath.slice(0, - suffix.length - 1);
+      filepath = filepath.slice(0, -suffix.length - 1);
     }
 
     var template_filepath = get_filepath({
@@ -33,18 +35,25 @@ function route_home (config, raneto) {
       filename : 'home.html'
     });
 
-    var stat     = fs.lstatSync(template_filepath);
-    var pageList = remove_image_content_directory(config, raneto.getPages('/index'));
+    // Filter out the image content directory and items with show_on_home == false
+    var pageList = remove_image_content_directory(config,
+      _.chain(raneto.getPages('/index'))
+        .filter(function (page) { return page.show_on_home; })
+        .map(function (page) {
+          page.files = _.filter(page.files, function (file) { return file.show_on_home; });
+          return page;
+        })
+        .value());
 
     return res.render('home', {
       config        : config,
-      pages         : pageList,
+      pages         : build_nested_pages(pageList),
       body_class    : 'page-home',
       meta          : config.home_meta,
-      last_modified : moment(stat.mtime).format('Do MMM YYYY'),
+      last_modified : get_last_modified(config, config.home_meta, template_filepath),
       lang          : config.lang,
-      loggedIn      : (config.authentication ? req.session.loggedIn : false),
-      username      : (config.authentication ? req.session.username : null)
+      loggedIn      : ((config.authentication || config.authentication_for_edit) ? req.session.loggedIn : false),
+      username      : ((config.authentication || config.authentication_for_edit) ? req.session.username : null)
     });
 
   };

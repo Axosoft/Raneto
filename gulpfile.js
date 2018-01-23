@@ -13,14 +13,15 @@ gulp.task('copy_libs', function () {
     'node_modules/highlightjs/**/*',
     'node_modules/jquery/**/*',
     'node_modules/masonry-layout/**/*',
-    'node_modules/sweetalert/**/*',
-    'node_modules/jquery.backstretch/**/*',
+    'node_modules/sweetalert2/**/*',
+    'node_modules/jquery-backstretch/**/*'
   ];
 
   var dest = 'themes/default/public/lib';
 
-  return gulp.src(source, { base: 'node_modules' })
-             .pipe(gulp.dest(dest));
+  return gulp
+    .src(source, { base: 'node_modules' })
+    .pipe(gulp.dest(dest));
 
 });
 

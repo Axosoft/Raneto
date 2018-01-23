@@ -4,8 +4,10 @@
 // Modules
 var path                           = require('path');
 var fs                             = require('fs');
-var moment                         = require('moment');
+var build_nested_pages             = require('../functions/build_nested_pages.js');
 var marked                         = require('marked');
+var toc                            = require('markdown-toc');
+var get_last_modified              = require('../functions/get_last_modified.js');
 var remove_image_content_directory = require('../functions/remove_image_content_directory.js');
 
 function route_wildcard (config, raneto) {
@@ -23,7 +25,7 @@ function route_wildcard (config, raneto) {
 
     // Remove "/edit" suffix
     if (file_path.indexOf(suffix, file_path.length - suffix.length) !== -1) {
-      file_path = file_path.slice(0, - suffix.length - 1);
+      file_path = file_path.slice(0, -suffix.length - 1);
     }
 
     if (!fs.existsSync(file_path)) { file_path += '.md'; }
@@ -38,9 +40,6 @@ function route_wildcard (config, raneto) {
 
       // Process Markdown files
       if (path.extname(file_path) === '.md') {
-
-        // File info
-        var stat = fs.lstatSync(file_path);
 
         // Meta
         var meta = raneto.processMeta(content);
@@ -58,14 +57,21 @@ function route_wildcard (config, raneto) {
         if (file_path_orig.indexOf(suffix, file_path_orig.length - suffix.length) !== -1) {
 
           // Edit Page
-          if (config.authentication === true && !req.session.loggedIn) {
+          if ((config.authentication || config.authentication_for_edit) && !req.session.loggedIn) {
             res.redirect('/login');
             return;
           }
           render  = 'edit';
-          content = content;
 
         } else {
+
+          // Render Table of Contents
+          if (config.table_of_contents) {
+            var tableOfContents = toc(content);
+            if (tableOfContents.content) {
+              content = '#### Table of Contents\n' + tableOfContents.content + '\n\n' + content;
+            }
+          }
 
           // Render Markdown
           marked.setOptions({
@@ -75,12 +81,12 @@ function route_wildcard (config, raneto) {
 
         }
 
-        var page_list = remove_image_content_directory(config, raneto.getPages(slug));
+        var pageList = remove_image_content_directory(config, raneto.getPages(slug));
 
-        var loggedIn = (config.authentication ? req.session.loggedIn : false);
+        var loggedIn = ((config.authentication || config.authentication_for_edit) ? req.session.loggedIn : false);
 
         var canEdit = false;
-        if (config.authentication) {
+        if (config.authentication || config.authentication_for_edit) {
           canEdit = loggedIn && config.allow_editing;
         } else {
           canEdit = config.allow_editing;
@@ -88,11 +94,11 @@ function route_wildcard (config, raneto) {
 
         return res.render(render, {
           config        : config,
-          pages         : page_list,
+          pages         : build_nested_pages(pageList),
           meta          : meta,
           content       : content,
           body_class    : template + '-' + raneto.cleanString(slug),
-          last_modified : moment(stat.mtime).format('Do MMM YYYY'),
+          last_modified : get_last_modified(config, meta, file_path),
           lang          : config.lang,
           loggedIn      : loggedIn,
           username      : (config.authentication ? req.session.username : null),

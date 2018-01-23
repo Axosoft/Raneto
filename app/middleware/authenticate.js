@@ -1,15 +1,16 @@
-
 'use strict';
 
 function middleware_authenticate (config) {
 
   if (config.authentication === true) {
-
     // Authentication Middleware
     return function (req, res, next) {
       if (!req.session.loggedIn) {
-        res.redirect(403, '/login');
-        return;
+        if (config.googleoauth === true) {
+          res.redirect(403, '/login');
+        } else {
+          res.redirect(403, '/login');
+        }
       }
       return next();
     };

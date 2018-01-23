@@ -17,17 +17,23 @@ install:
 	npm install;
 
 .PHONY: test
-test: delint
+test: delint mocha
 
 .PHONY: delint
 delint:
 
-	# JSHint
-	./node_modules/jshint/bin/jshint \
-		app/                           \
-		bin/raneto                     \
-		example/                       \
-		gulpfile.js;
+	# ESLint
+	./node_modules/.bin/eslint \
+		./app/**/*.js            \
+		./bin/*.js               \
+		./example/**/*.js        \
+		./test/*.js              \
+		./translations/*.json    \
+		./gulpfile.js;
+
+.PHONY: mocha
+mocha:
+	npm test;
 
 .PHONY: build
 build:
