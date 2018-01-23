@@ -119,6 +119,30 @@ function initialize (config) {
 
   }
 
+  /**
+   * Allows for redirects specified in config
+   * Attaches any query string to the redirected req
+   * 
+   * config: {
+   *  redirects: {
+   *    '/original':'/redirected'
+   *  }
+   * }
+   */
+  if (config.redirects) {
+    app.use(function (req, res, next) {
+      var redirectUrl = config.redirects[req.baseUrl + req.path];
+      if (redirectUrl) {
+        if (Object.keys(req.query).length > 0) {
+          redirectUrl += '?' + req.originalUrl.split('?')[1];
+        }
+        res.redirect(301, redirectUrl);
+      } else {
+        next();
+      }
+    });
+  }
+
   // Router for / and /index with or without search parameter
   if (config.googleoauth === true) {
     app.get('/:var(index)?', oauth2.required, route_search, route_home);
